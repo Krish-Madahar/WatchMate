@@ -1,6 +1,8 @@
-FROM node:20-slim AS builder
+FROM node:20 AS builder
 
 WORKDIR /app
+
+RUN apt-get update -y && apt-get install -y openssl
 
 COPY package*.json tsconfig.json ./
 RUN npm ci
@@ -11,7 +13,7 @@ RUN npx prisma generate
 COPY src ./src
 RUN npx tsc
 
-FROM node:20-slim AS production
+FROM node:20 AS production
 
 WORKDIR /app
 
