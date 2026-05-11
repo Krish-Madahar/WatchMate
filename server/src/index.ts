@@ -45,33 +45,13 @@ const limiter = rateLimit({
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - allow Vercel frontend and localhost
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin) {
-      return callback(null, true);
-    }
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173',
-      process.env.FRONTEND_URL,
-    ].filter(Boolean);
-
-    // Check if origin is in allowed list or matches Vercel pattern
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.vercel.sh')) {
-      callback(null, true);
-    } else {
-      console.log(`CORS blocked origin: ${origin}`);
-      callback(null, true); // Allow for debugging, restrict in production
-    }
-  },
+// CORS - allow all for now (restrict in production)
+app.use(cors({
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-};
-app.use(cors(corsOptions));
+}));
 app.use(express.json());
 app.use(limiter);
 
@@ -86,13 +66,18 @@ app.get('/', (_req: Request, res: Response) => {
 
 // Debug middleware
 app.use((req: Request, _res: Response, next) => {
-  console.log(`[DEBUG] ${req.method} ${req.path}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/movies', movieRoutes);
+
+// Test route
+app.get('/api/test', (_req, res) => {
+  res.json({ message: 'API is working', timestamp: new Date().toISOString() });
+});
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
