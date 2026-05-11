@@ -23,6 +23,7 @@ const isValidPassword = (password: string): boolean => {
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, username, password } = req.body;
+    console.log('[AUTH] Register attempt:', { email, username: username?.substring(0, 3) + '***' });
 
     // Validate input
     if (!email || !username || !password) {
@@ -77,9 +78,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       },
     });
 
+    console.log('[AUTH] User created:', user.id);
+
     // Generate JWT
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
+      console.error('[AUTH] JWT_SECRET not configured');
       res.status(500).json({ error: 'JWT secret not configured' });
       return;
     }
@@ -95,9 +99,10 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       user,
       token,
     });
-  } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({ error: 'Registration failed' });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('[AUTH] Registration error:', error.message, error.stack);
+    res.status(500).json({ error: 'Registration failed: ' + error.message });
   }
 });
 

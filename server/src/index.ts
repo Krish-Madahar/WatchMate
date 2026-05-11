@@ -93,10 +93,13 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // Start server with graceful shutdown
 const server = app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
 
   // Connect to Redis on startup
   try {
     await redis.connect();
+    console.log('Connected to Redis');
   } catch (err) {
     console.log('Redis connection failed, continuing without cache');
   }
@@ -107,8 +110,15 @@ const server = app.listen(PORT, async () => {
     console.log('Connected to PostgreSQL database');
   } catch (err) {
     console.error('Database connection failed:', err);
-    process.exit(1);
+    // Don't exit - let the server continue so we can see the error
   }
+});
+
+// Global error handler - must be BEFORE routes
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal server error: ' + err.message });
 });
 
 // Graceful shutdown
