@@ -32,8 +32,20 @@ export default function Register() {
       toast.success('Account created successfully!', { icon: '🎉' });
       navigate('/dashboard');
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } } };
-      toast.error(err.response?.data?.error || 'Registration failed');
+      const err = error as { response?: { data?: { error?: string }; status?: number }; message?: string; code?: string };
+      let errorMessage = 'Registration failed. Please try again.';
+
+      if (err.response?.status === 409) {
+        errorMessage = err.response?.data?.error || 'Email or username already exists';
+      } else if (err.response?.status === 400) {
+        errorMessage = err.response?.data?.error || 'Invalid input';
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network')) {
+        errorMessage = 'Cannot connect to server. Please check your connection.';
+      }
+
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -30,8 +30,17 @@ export default function Login() {
       toast.success('Welcome back!', { icon: '👋' });
       navigate('/dashboard');
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
-      const errorMessage = err.response?.data?.error || err.message || 'Login failed';
+      const err = error as { response?: { data?: { error?: string }; status?: number }; message?: string; code?: string };
+      let errorMessage = 'Login failed. Please try again.';
+
+      if (err.response?.status === 401) {
+        errorMessage = err.response?.data?.error || 'Invalid email or password';
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.code === 'ERR_NETWORK' || err.message?.includes('Network')) {
+        errorMessage = 'Cannot connect to server. Please check your connection.';
+      }
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
